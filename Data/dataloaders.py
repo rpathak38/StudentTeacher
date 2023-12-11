@@ -49,8 +49,9 @@ def get_dataloaders(input_paths, target_paths, batch_size):
         ]
     )
 
+    # included antialias to be false in order to suppress warning on newer torch versions
     transform_target = transforms.Compose(
-        [transforms.ToTensor(), transforms.Resize((352, 352)), transforms.Grayscale()]
+        [transforms.ToTensor(), transforms.Resize((352, 352), antialias=False), transforms.Grayscale()]
     )
 
     train_dataset = SegDataset(

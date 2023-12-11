@@ -1,6 +1,5 @@
 import sys
 import os
-import argparse
 import time
 import numpy as np
 import glob
@@ -12,7 +11,7 @@ from Data import dataloaders
 from Models import models
 from Metrics import performance_metrics
 from Metrics import losses
-
+import types
 
 def train_epoch(model, device, train_loader, optimizer, epoch, Dice_loss, BCE_loss):
     t = time.time()
@@ -96,15 +95,33 @@ def build(args):
         device = torch.device("cpu")
 
     if args.dataset == "Kvasir":
-        img_path = args.root + "images/*"
+        kvasir_path = args.root + "Kvasir-SEG/"
+        img_path = kvasir_path + "images/*"
         input_paths = sorted(glob.glob(img_path))
-        depth_path = args.root + "masks/*"
+        depth_path = kvasir_path + "masks/*"
         target_paths = sorted(glob.glob(depth_path))
     elif args.dataset == "CVC":
-        img_path = args.root + "Original/*"
+        cvc_path = args.root + "CVC-ClinicDB/"
+        img_path = cvc_path + "Original/*"
         input_paths = sorted(glob.glob(img_path))
-        depth_path = args.root + "Ground Truth/*"
+        depth_path = cvc_path + "Ground Truth/*"
         target_paths = sorted(glob.glob(depth_path))
+    elif args.dataset == "both":
+        input_paths = []
+        target_paths = []
+
+        kvasir_path = args.root + "Kvasir-SEG/"
+        img_path = kvasir_path + "images/*"
+        input_paths += sorted(glob.glob(img_path))
+        depth_path = kvasir_path + "masks/*"
+        target_paths += sorted(glob.glob(depth_path))
+
+        cvc_path = args.root + "CVC-ClinicDB/"
+        img_path = cvc_path + "Original/*"
+        input_paths += sorted(glob.glob(img_path))
+        depth_path = cvc_path + "Ground Truth/*"
+        target_paths += sorted(glob.glob(depth_path))
+
     train_dataloader, _, val_dataloader = dataloaders.get_dataloaders(
         input_paths, target_paths, batch_size=args.batch_size
     )
@@ -133,86 +150,100 @@ def build(args):
     )
 
 
-def train(args):
-    (
-        device,
-        train_dataloader,
-        val_dataloader,
-        Dice_loss,
-        BCE_loss,
-        perf,
-        model,
-        optimizer,
-    ) = build(args)
-
-    if not os.path.exists("./Trained models"):
-        os.makedirs("./Trained models")
-
-    prev_best_test = None
-    if args.lrs == "true":
-        if args.lrs_min > 0:
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="max", factor=0.5, min_lr=args.lrs_min, verbose=True
-            )
-        else:
-            scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                optimizer, mode="max", factor=0.5, verbose=True
-            )
-    for epoch in range(1, args.epochs + 1):
-        try:
-            loss = train_epoch(
-                model, device, train_dataloader, optimizer, epoch, Dice_loss, BCE_loss
-            )
-            test_measure_mean, test_measure_std = test(
-                model, device, val_dataloader, epoch, perf
-            )
-        except KeyboardInterrupt:
-            print("Training interrupted by user")
-            sys.exit(0)
-        if args.lrs == "true":
-            scheduler.step(test_measure_mean)
-        if prev_best_test == None or test_measure_mean > prev_best_test:
-            print("Saving...")
-            torch.save(
-                {
-                    "epoch": epoch,
-                    "model_state_dict": model.state_dict()
-                    if args.mgpu == "false"
-                    else model.module.state_dict(),
-                    "optimizer_state_dict": optimizer.state_dict(),
-                    "loss": loss,
-                    "test_measure_mean": test_measure_mean,
-                    "test_measure_std": test_measure_std,
-                },
-                "Trained models/FCBFormer_" + args.dataset + ".pt",
-            )
-            prev_best_test = test_measure_mean
-
-
-def get_args():
-    parser = argparse.ArgumentParser(description="Train FCBFormer on specified dataset")
-    parser.add_argument("--dataset", type=str, required=True, choices=["Kvasir", "CVC"])
-    parser.add_argument("--data-root", type=str, required=True, dest="root")
-    parser.add_argument("--epochs", type=int, default=200)
-    parser.add_argument("--batch-size", type=int, default=16)
-    parser.add_argument("--learning-rate", type=float, default=1e-4, dest="lr")
-    parser.add_argument(
-        "--learning-rate-scheduler", type=str, default="true", dest="lrs"
-    )
-    parser.add_argument(
-        "--learning-rate-scheduler-minimum", type=float, default=1e-6, dest="lrs_min"
-    )
-    parser.add_argument(
-        "--multi-gpu", type=str, default="false", dest="mgpu", choices=["true", "false"]
-    )
-
-    return parser.parse_args()
+# def train(args):
+#     (
+#         device,
+#         train_dataloader,
+#         val_dataloader,
+#         Dice_loss,
+#         BCE_loss,
+#         perf,
+#         model,
+#         optimizer,
+#     ) = build(args)
+#
+#     if not os.path.exists("./Trained models"):
+#         os.makedirs("./Trained models")
+#
+#     prev_best_test = None
+#     if args.lrs == "true":
+#         if args.lrs_min > 0:
+#             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#                 optimizer, mode="max", factor=0.5, min_lr=args.lrs_min, verbose=True
+#             )
+#         else:
+#             scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+#                 optimizer, mode="max", factor=0.5, verbose=True
+#             )
+#     for epoch in range(1, args.epochs + 1):
+#         try:
+#             loss = train_epoch(
+#                 model, device, train_dataloader, optimizer, epoch, Dice_loss, BCE_loss
+#             )
+#             test_measure_mean, test_measure_std = test(
+#                 model, device, val_dataloader, epoch, perf
+#             )
+#         except KeyboardInterrupt:
+#             print("Training interrupted by user")
+#             sys.exit(0)
+#         if args.lrs == "true":
+#             scheduler.step(test_measure_mean)
+#         if prev_best_test == None or test_measure_mean > prev_best_test:
+#             print("Saving...")
+#             torch.save(
+#                 {
+#                     "epoch": epoch,
+#                     "model_state_dict": model.state_dict()
+#                     if args.mgpu == "false"
+#                     else model.module.state_dict(),
+#                     "optimizer_state_dict": optimizer.state_dict(),
+#                     "loss": loss,
+#                     "test_measure_mean": test_measure_mean,
+#                     "test_measure_std": test_measure_std,
+#                 },
+#                 "Trained models/FCBFormer_" + args.dataset + ".pt",
+#             )
+#             prev_best_test = test_measure_mean
 
 
-def main():
-    args = get_args()
-    train(args)
+def setup_train_args(dataset="Kvasir", data_root="./data_root/Kvasir-SEG/", epochs=200, batch_size=16,
+                     learning_rate=1e-4, learning_rate_scheduler=True, learning_rate_scheduler_minimum=1e-6,
+                     multi_gpu=False):
+    args = dict()
+    args["dataset"] = dataset
+    args["root"] = data_root
+    args["epochs"] = epochs
+    args["batch_size"] = batch_size
+    args["lr"] = learning_rate
+    args['lrs'] = learning_rate_scheduler
+    args['lrs_min'] = learning_rate_scheduler_minimum
+    args['mgpu'] = multi_gpu
+    return types.SimpleNamespace(**args)
+
+# def get_args():
+#     parser = argparse.ArgumentParser(description="Train FCBFormer on specified dataset")
+#     parser.add_argument("--dataset", type=str, required=True, choices=["Kvasir", "CVC"])
+#     parser.add_argument("--data-root", type=str, required=True, dest="root")
+#     parser.add_argument("--epochs", type=int, default=200)
+#     parser.add_argument("--batch-size", type=int, default=16)
+#     parser.add_argument("--learning-rate", type=float, default=1e-4, dest="lr")
+#     parser.add_argument(
+#         "--learning-rate-scheduler", type=str, default="true", dest="lrs"
+#     )
+#     parser.add_argument(
+#         "--learning-rate-scheduler-minimum", type=float, default=1e-6, dest="lrs_min"
+#     )
+#     parser.add_argument(
+#         "--multi-gpu", type=str, default="false", dest="mgpu", choices=["true", "false"]
+#     )
+#
+#     return parser.parse_args()
 
 
-if __name__ == "__main__":
-    main()
+# def main():
+#     args = get_args()
+#     train(args)
+#
+#
+# if __name__ == "__main__":
+#     main()
