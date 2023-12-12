@@ -11,7 +11,7 @@ from Data import dataloaders
 from Models import models
 from Metrics import performance_metrics
 from Metrics import losses
-from Student_Models import unet
+from Student_Models import unet, unet_attention, unet_inception, unet_skip
 import types
 
 
@@ -197,6 +197,12 @@ def build(args):
 
         if args.model == "unet":
             model = unet.UNet(3, 1, [64, 128, 256, 512])
+        elif args.model == "unet_attention":
+            model = unet_attention.UNetAttn(3, 1, [64, 128, 256, 512])
+        elif args.model == "unet_inception":
+            model = unet_inception.UNetInception(3, 1, [64, 128, 256, 512])
+        elif args.model == "unet_skip":
+            model = unet_skip.UNetSkip(3, 1, [64, 128, 256, 512])
         xavier_init_weights(model)
 
     if args.mgpu == "true":
