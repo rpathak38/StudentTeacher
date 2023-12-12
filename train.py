@@ -186,7 +186,7 @@ def build(args):
     if args.model == "teacher":
         model = models.FCBFormer()
     elif args.model == "unet":
-        model = unet.UNet()
+        model = unet.UNet(3, 1, [64, 128, 256, 512])
         teach_model = models.FCBFormer()
         saved_state = torch.load("Trained models/FCBFormer_" + args.dataset + ".pt")
         # Update model state
