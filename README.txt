@@ -2,7 +2,7 @@ Spinning Up:
 1. Create conda environment:
 
 2. Install pytorch in conda environment:
-conda install pytorch torchvision torchaudio pytorch-cuda=11.1 -c pytorch -c nvidia
+https://pytorch.org/get-started/locally/
 
 3. Install everything in the requirements using pip
 
