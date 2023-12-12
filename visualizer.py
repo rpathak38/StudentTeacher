@@ -31,7 +31,7 @@ def visualize_random_image(data_loader, model):
     model.train()
 
 
-def visualize_loss_acc_plot(loss_list, acc_list):
+def visualize_loss_acc_plot(loss_list, acc_list, path=None):
     # Validation to ensure that loss and accuracy lists have the same length
     if len(loss_list) != len(acc_list):
         raise ValueError("Loss list and accuracy list must be of the same length.")
@@ -55,6 +55,7 @@ def visualize_loss_acc_plot(loss_list, acc_list):
 
     # Title
     plt.title('Training Loss and Accuracy')
-
+    if path is not None:
+        plt.savefig(path)
     # Show plot
     plt.show()

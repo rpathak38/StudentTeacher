@@ -87,26 +87,11 @@ def eval(args):
             )
 
 
-def get_args():
-    parser = argparse.ArgumentParser(
-        description="Make predictions on specified dataset"
-    )
-    parser.add_argument(
-        "--train-dataset", type=str, required=True, choices=["Kvasir", "CVC"]
-    )
-    parser.add_argument(
-        "--test-dataset", type=str, required=True, choices=["Kvasir", "CVC"]
-    )
-    parser.add_argument("--data-root", type=str, required=True, dest="root")
-
-    return parser.parse_args()
-
-
-def main():
-    args = get_args()
-    eval(args)
-
-
-if __name__ == "__main__":
-    main()
+import types
+def set_eval_args(train_dataset, test_dataset, data_root):
+    args = dict()
+    args["train_dataset"] = train_dataset
+    args["test_dataset"] = test_dataset
+    args['root'] = data_root
+    return types.SimpleNamespace(**args)
 

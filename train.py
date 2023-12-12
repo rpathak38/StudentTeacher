@@ -68,7 +68,7 @@ def student_train_epoch(student_model, teacher_model, device, train_loader, opti
         student_output = student_model(data)
         
         ground_truth_loss = Dice_loss(student_output, target) + BCE_loss(torch.sigmoid(student_output), target)
-        teach_loss = KLT_loss(student_output, teacher_output, temperature=Temperature) 
+        teach_loss = KLT_loss(student_output, teacher_output)
         loss = ground_truth_loss * (1 - alpha) + teach_loss * alpha
         loss.backward() 
         optimizer.step()
@@ -137,6 +137,10 @@ def test(model, device, test_loader, epoch, perf_measure):
     return np.mean(perf_accumulator), np.std(perf_accumulator)
 
 
+def xavier_init_weights(m):
+    if isinstance(m, torch.nn.Conv2d):
+        torch.nn.init.xavier_uniform(m.weight)
+
 def build(args):
     if torch.cuda.is_available():
         device = torch.device("cuda")
@@ -185,12 +189,15 @@ def build(args):
     teach_model = None
     if args.model == "teacher":
         model = models.FCBFormer()
-    elif args.model == "unet":
-        model = unet.UNet(3, 1, [64, 128, 256, 512])
+    else:
         teach_model = models.FCBFormer()
         saved_state = torch.load("Trained models/FCBFormer_" + args.dataset + ".pt")
         # Update model state
         teach_model.load_state_dict(saved_state["model_state_dict"])
+
+        if args.model == "unet":
+            model = unet.UNet(3, 1, [64, 128, 256, 512])
+        xavier_init_weights(model)
 
     if args.mgpu == "true":
         model = nn.DataParallel(model)
