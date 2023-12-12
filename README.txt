@@ -12,6 +12,9 @@ conda install pytorch torchvision torchaudio pytorch-cuda=11.1 -c pytorch -c nvi
 Download and extract https://datasets.simula.no/downloads/kvasir-seg.zip to data_root
 Download and extract https://www.dropbox.com/s/p5qe9eotetjnbmq/CVC-ClinicDB.rar?dl=1 to data_root
 
+6. Create a folder called "Trained models" (without the quotations but include the space)
+Download and place https://www.dropbox.com/scl/fi/bhfo8ijeg2wyg7p4ehwb7/FCBFormer_both.pt?rlkey=xcjd4mpyfopyziuvut5ry46nv&dl=1 in this folder
+
 Trainings:
 There are three jupyter files: teacher_train, student_train_alone, student_train_with_teacher
 teacher_train -- used to train the teacher
