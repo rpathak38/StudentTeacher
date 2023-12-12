@@ -44,7 +44,7 @@ class FCB(nn.Module):
         n_levels_down=6,
         n_levels_up=6,
         n_RBs=2,
-        in_resolution=352,
+        in_resolution=256,
     ):
 
         super().__init__()
@@ -172,7 +172,7 @@ class TB(nn.Module):
 
 
 class FCBFormer(nn.Module):
-    def __init__(self, size=352):
+    def __init__(self, size=256):
 
         super().__init__()
 

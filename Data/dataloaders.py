@@ -32,7 +32,7 @@ def get_dataloaders(input_paths, target_paths, batch_size):
     transform_input4train = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Resize((352, 352), antialias=True),
+            transforms.Resize((256, 256), antialias=True),
             transforms.GaussianBlur((25, 25), sigma=(0.001, 2.0)),
             transforms.ColorJitter(
                 brightness=0.4, contrast=0.5, saturation=0.25, hue=0.01
@@ -44,14 +44,14 @@ def get_dataloaders(input_paths, target_paths, batch_size):
     transform_input4test = transforms.Compose(
         [
             transforms.ToTensor(),
-            transforms.Resize((352, 352), antialias=True),
+            transforms.Resize((256, 256), antialias=True),
             transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
         ]
     )
 
     # included antialias to be false in order to suppress warning on newer torch versions
     transform_target = transforms.Compose(
-        [transforms.ToTensor(), transforms.Resize((352, 352), antialias=False), transforms.Grayscale()]
+        [transforms.ToTensor(), transforms.Resize((256, 256), antialias=False), transforms.Grayscale()]
     )
 
     train_dataset = SegDataset(

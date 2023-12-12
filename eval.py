@@ -47,7 +47,7 @@ def eval(args):
     for i in range(len(test_files)):
         pred = np.ndarray.flatten(imread(prediction_files[i]) / 255) > 0.5
         gt = (
-            resize(imread(test_files[i]), (int(352), int(352)), anti_aliasing=False)
+            resize(imread(test_files[i]), (int(256), int(256)), anti_aliasing=False)
             > 0.5
         )
 

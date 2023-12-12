@@ -11,7 +11,9 @@ from Data import dataloaders
 from Models import models
 from Metrics import performance_metrics
 from Metrics import losses
+from Student_Models import unet
 import types
+
 
 def train_epoch(model, device, train_loader, optimizer, epoch, Dice_loss, BCE_loss):
     t = time.time()
@@ -25,6 +27,53 @@ def train_epoch(model, device, train_loader, optimizer, epoch, Dice_loss, BCE_lo
         loss.backward()
         optimizer.step()
         loss_accumulator.append(loss.item())
+        if batch_idx + 1 < len(train_loader):
+            print(
+                "\rTrain Epoch: {} [{}/{} ({:.1f}%)]\tLoss: {:.6f}\tTime: {:.6f}".format(
+                    epoch,
+                    (batch_idx + 1) * len(data),
+                    len(train_loader.dataset),
+                    100.0 * (batch_idx + 1) / len(train_loader),
+                    loss.item(),
+                    time.time() - t,
+                ),
+                end="",
+            )
+        else:
+            print(
+                "\rTrain Epoch: {} [{}/{} ({:.1f}%)]\tAverage loss: {:.6f}\tTime: {:.6f}".format(
+                    epoch,
+                    (batch_idx + 1) * len(data),
+                    len(train_loader.dataset),
+                    100.0 * (batch_idx + 1) / len(train_loader),
+                    np.mean(loss_accumulator),
+                    time.time() - t,
+                )
+            )
+
+    return np.mean(loss_accumulator)
+
+
+def student_train_epoch(student_model, teacher_model, device, train_loader, optimizer, epoch, Dice_loss, BCE_loss, KLT_loss, Temperature, alpha):
+    t = time.time()
+    student_model.train()
+    teacher_model.eval()
+    loss_accumulator = []
+
+    for batch_idx, (data, target) in enumerate(train_loader):
+        data, target = data.to(device), target.to(device)
+        optimizer.zero_grad()
+        with torch.no_grad():
+            teacher_output = teacher_model(data)
+        student_output = student_model(data)
+        
+        ground_truth_loss = Dice_loss(student_output, target) + BCE_loss(torch.sigmoid(student_output), target)
+        teach_loss = KLT_loss(student_output, teacher_output, temperature=Temperature) 
+        loss = ground_truth_loss * (1 - alpha) + teach_loss * alpha
+        loss.backward() 
+        optimizer.step()
+        loss_accumulator.append(loss.item())
+        
         if batch_idx + 1 < len(train_loader):
             print(
                 "\rTrain Epoch: {} [{}/{} ({:.1f}%)]\tLoss: {:.6f}\tTime: {:.6f}".format(
@@ -122,32 +171,63 @@ def build(args):
         depth_path = cvc_path + "Ground Truth/*"
         target_paths += sorted(glob.glob(depth_path))
 
-    train_dataloader, _, val_dataloader = dataloaders.get_dataloaders(
+    train_dataloader, test_dataloader, val_dataloader = dataloaders.get_dataloaders(
         input_paths, target_paths, batch_size=args.batch_size
     )
 
     Dice_loss = losses.SoftDiceLoss()
     BCE_loss = nn.BCELoss()
+    KLT_loss = losses.KLTDivergence(temperature=args.temp)
 
     perf = performance_metrics.DiceScore()
 
-    model = models.FCBFormer()
+    model = None
+    teach_model = None
+    if args.model == "teacher":
+        model = models.FCBFormer()
+    elif args.model == "unet":
+        model = unet.UNet()
+        teach_model = models.FCBFormer()
+        saved_state = torch.load("Trained models/FCBFormer_" + args.dataset + ".pt")
+        # Update model state
+        teach_model.load_state_dict(saved_state["model_state_dict"])
 
     if args.mgpu == "true":
         model = nn.DataParallel(model)
     model.to(device)
-    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    if teach_model is not None:
+        teach_model.to(device)
 
-    return (
-        device,
-        train_dataloader,
-        val_dataloader,
-        Dice_loss,
-        BCE_loss,
-        perf,
-        model,
-        optimizer,
-    )
+    optimizer = torch.optim.AdamW(model.parameters(), lr=args.lr)
+    # student case
+    if teach_model is not None:
+        return (
+            device,
+            train_dataloader,
+            test_dataloader,
+            val_dataloader,
+            Dice_loss,
+            BCE_loss,
+            KLT_loss,
+            perf,
+            model,
+            teach_model,
+            optimizer,
+            args.alpha,
+            args.temp
+        )
+    else:
+        return (
+            device,
+            train_dataloader,
+            test_dataloader,
+            val_dataloader,
+            Dice_loss,
+            BCE_loss,
+            perf,
+            model,
+            optimizer,
+        )
 
 
 # def train(args):
@@ -206,7 +286,8 @@ def build(args):
 #             prev_best_test = test_measure_mean
 
 
-def setup_train_args(dataset="Kvasir", data_root="./data_root/Kvasir-SEG/", epochs=200, batch_size=16,
+def setup_train_args(my_model="teacher", temperature=1, alpha=0.5, dataset="Kvasir", data_root="./data_root/Kvasir-SEG/", epochs=200,
+                     batch_size=16,
                      learning_rate=1e-4, learning_rate_scheduler=True, learning_rate_scheduler_minimum=1e-6,
                      multi_gpu=False):
     args = dict()
@@ -218,6 +299,9 @@ def setup_train_args(dataset="Kvasir", data_root="./data_root/Kvasir-SEG/", epoc
     args['lrs'] = learning_rate_scheduler
     args['lrs_min'] = learning_rate_scheduler_minimum
     args['mgpu'] = multi_gpu
+    args['model'] = my_model
+    args['temp'] = temperature ## controls how much the sigmoid is softened, higher temperature means softer sigmoid
+    args['alpha'] = alpha ## controls we weight the teacher's outputs as opposed to ground truth, higher alpha means higher emphasis on teacher's output (must be between 0-1)
     return types.SimpleNamespace(**args)
 
 # def get_args():

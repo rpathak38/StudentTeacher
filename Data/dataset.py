@@ -49,8 +49,8 @@ class SegDataset(data.Dataset):
 
         if self.affine:
             angle = random.uniform(-180.0, 180.0)
-            h_trans = random.uniform(-352 / 8, 352 / 8)
-            v_trans = random.uniform(-352 / 8, 352 / 8)
+            h_trans = random.uniform(-256 / 8, 256 / 8)
+            v_trans = random.uniform(-256 / 8, 256 / 8)
             scale = random.uniform(0.5, 1.5)
             shear = random.uniform(-22.5, 22.5)
             x = TF.affine(x, angle, (h_trans, v_trans), scale, shear, fill=-1.0)
