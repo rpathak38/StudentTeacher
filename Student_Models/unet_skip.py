@@ -40,7 +40,7 @@ class DoubleConv(nn.Module):
         return self.double_conv(x)
 
 
-class UNet(nn.Module):
+class UNetSkip(nn.Module):
     """Unet inspired architecture.
     Using same convolutions, with output channels being equal to the number of classes. Adding instead of
     appending. Upsampling with MaxUnpooling instead of transpose convolutions.
