@@ -196,13 +196,13 @@ def build(args):
         teach_model.load_state_dict(saved_state["model_state_dict"])
 
         if args.model == "unet":
-            model = unet.UNet(3, 1, [64, 128])
+            model = unet.UNet(3, 1, [64, 128, 256])
         elif args.model == "unet_attention":
-            model = unet_attention.UNetAttn(3, 1, [64, 128, 256, 512])
+            model = unet_attention.UNetAttn(3, 1, [64, 128, 256])
         elif args.model == "unet_inception":
-            model = unet_inception.UNetInception(3, 1, [64, 128, 256, 512])
+            model = unet_inception.UNetInception(3, 1, [64, 128, 256])
         elif args.model == "unet_skip":
-            model = unet_skip.UNetSkip(3, 1, [64, 128, 256, 512])
+            model = unet_skip.UNetSkip(3, 1, [64, 128, 256])
         xavier_init_weights(model)
         print(model)
 
