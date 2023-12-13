@@ -195,8 +195,12 @@ def build(args):
         # Update model state
         teach_model.load_state_dict(saved_state["model_state_dict"])
 
-        if args.model == "unet":
+        if args.model == "unet128":
+            model = unet.UNet(3, 1, [64, 128])
+        elif args.model == "unet256":
             model = unet.UNet(3, 1, [64, 128, 256])
+        elif args.model == "unet512":
+            model = unet.UNet(3, 1, [64, 128, 256, 512])
         elif args.model == "unet_attention":
             model = unet_attention.UNetAttn(3, 1, [64, 128, 256])
         elif args.model == "unet_inception":
