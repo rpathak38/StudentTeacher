@@ -196,7 +196,7 @@ def build(args):
         teach_model.load_state_dict(saved_state["model_state_dict"])
 
         if args.model == "unet":
-            model = unet.UNet(3, 1, [64, 128, 256, 512])
+            model = unet.UNet(3, 1, [64, 128])
         elif args.model == "unet_attention":
             model = unet_attention.UNetAttn(3, 1, [64, 128, 256, 512])
         elif args.model == "unet_inception":
@@ -204,6 +204,7 @@ def build(args):
         elif args.model == "unet_skip":
             model = unet_skip.UNetSkip(3, 1, [64, 128, 256, 512])
         xavier_init_weights(model)
+        print(model)
 
     if args.mgpu == "true":
         model = nn.DataParallel(model)
