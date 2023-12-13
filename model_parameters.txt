@@ -1,0 +1,10 @@
+UNet 128: 1110274 parameters
+UNet 256: 4651778 parameters
+UNet 512: 18812674 parameters
+UNet Attention 128: 1759080 parameters
+UNet Attention 256: 7431915 parameters
+UNet Attention 512: 30115310 parameters
+UNet Inception 128: 1459499 parameters
+UNet Inception 256: 6071339 parameters
+UNet Inception 512: 24490539 parameters
+Transformer Model: 52962337 parameters
